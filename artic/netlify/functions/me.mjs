@@ -7,5 +7,5 @@ export default async (req) => {
   if (!email) return json({ message: "غير مسجل" }, 401);
   const u = await getStore("users").get(emailKey(email), { type: "json" });
   if (!u) return json({ message: "غير مسجل" }, 401);
-  return json({ email: u.email, username: u.username });
+  return json({ email: u.email, username: u.username, avatar: u.avatar || null });
 };
