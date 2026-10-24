@@ -17,6 +17,11 @@ export default async (req) => {
   if (!RESEND_API_KEY || !MAIL_FROM || !CODE_SECRET)
     return json({ message: "خدمة البريد غير مهيأة بعد" }, 500);
 
+  if (body.purpose === "register") {
+    const exists = await getStore("users").get(createHash("sha256").update(email).digest("hex"), { type: "json" });
+    if (exists) return json({ message: "هذا البريد مستخدم بالفعل، سجّل الدخول" }, 409);
+  }
+
   const store = getStore("email-codes");
   const key = createHash("sha256").update(email).digest("hex");
   const old = await store.get(key, { type: "json" });
@@ -25,7 +30,6 @@ export default async (req) => {
   if (old && now - old.sentAt < 60_000)
     return json({ message: "انتظر دقيقة قبل إعادة الإرسال" }, 429);
 
-  // حد 5 رسائل في الساعة لكل بريد
   let hourStart = old?.hourStart && now - old.hourStart < 3_600_000 ? old.hourStart : now;
   let hourCount = hourStart === old?.hourStart ? old.hourCount : 0;
   if (hourCount >= 5) return json({ message: "تجاوزت الحد المسموح، حاول بعد ساعة" }, 429);
@@ -48,7 +52,7 @@ export default async (req) => {
   });
 
   if (!res.ok) {
-    console.error("resend failed", res.status); // بدون طباعة المفتاح أو الكود
+    console.error("resend failed", res.status);
     return json({ message: "تعذر إرسال البريد، حاول لاحقاً" }, 502);
   }
 
