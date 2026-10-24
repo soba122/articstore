@@ -1,4 +1,4 @@
-loimport { getStore } from "@netlify/blobs";
+import { getStore } from "@netlify/blobs";
 import { json, normEmail, emailKey, checkPw, hashPw, makeSession, cookie } from "../lib/auth.mjs";
 
 export default async (req) => {
