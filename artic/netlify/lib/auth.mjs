@@ -1,3 +1,4 @@
+import { getStore } from "@netlify/blobs";
 import { createHmac, createHash, scryptSync, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const json = (b, s = 200, h = {}) =>
@@ -36,4 +37,4 @@ export function readSession(req) {
     return d.x > Date.now() ? d.e : null;
   } catch { return null; }
 }
-export const cookie = (v, age) => `session=${v}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${age}`;
+export const cookie = (v, age) => `session=${v};
