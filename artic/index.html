@@ -96,7 +96,7 @@ input.f:focus,.search:focus{outline:2px solid var(--ice)}
 <main id="app"></main>
 
 <script>
-const IC={crown:'M3 18h18l-1.5-10-4.5 4-3-6-3 6-4.5-4z',up:'M12 4l7 8h-4v8H9v-8H5z',sword:'M20 4v5L10 19l-3-3L17 4zM6 15l-3 3 3 3 3-3',brick:'M3 6h18v12H3zM3 12h18M9 6v6M15 12v6',wing:'M3 8c6 0 10 3 18 11-6 0-10-3-18-11z',coin:'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v10M9 10h6',gift:'M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7C9 3 6 6 8 7M12 7c3-4 6-1 4 0',snow:'M12 3v18M4 7.5l16 9M20 7.5l-16 9',home:'M3 11l9-8 9 8M5 10v10h14V10',store:'M4 7h16l-1-3H5zM5 7v13h14V7M10 20v-6h4v6',cart:'M2.5 4h2.3l2.3 11h10.6l2.3-8H6',list:'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',help:'M12 3a9 9 0 100 18 9 9 0 000-18zM9.5 9.5a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5M12 17h.01'};
+const IC={crown:'M3 18h18l-1.5-10-4.5 4-3-6-3 6-4.5-4z',up:'M12 4l7 8h-4v8H9v-8H5z',sword:'M20 4v5L10 19l-3-3L17 4zM6 15l-3 3 3 3 3-3',brick:'M3 6h18v12H3zM3 12h18M9 6v6M15 12v6',wing:'M3 8c6 0 10 3 18 11-6 0-10-3-18-11z',coin:'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v10M9 10h6',gift:'M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7C9 3 6 6 8 7M12 7c3-4 6-1 4 0',snow:'M12 3v18M4 7.5l16 9M20 7.5l-16 9',home:'M3 11l9-8 9 8M5 10v10h14V10',store:'M4 7h16l-1-3H5zM5 7v13h14V7M10 20v-6h4v6',cart:'M2.5 4h2.3l2.3 11h10.6l2.3-8H6',list:'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',user:'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',help:'M12 3a9 9 0 100 18 9 9 0 000-18zM9.5 9.5a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5M12 17h.01'};
 const svg=n=>`<svg class="i" viewBox="0 0 24 24"><path d="${IC[n]}"/></svg>`;
 const CATS=[['الكل','store'],['رتب ماينكرافت','crown'],['ترقيات الرتب','up'],['كيتات','sword'],['عناصر مميزة','wing'],['عملات وتوكنز','coin'],['باقات','gift'],['عروض موسمية','snow']];
 // الأسعار للعرض فقط: الأسعار الحقيقية تُقرأ من قاعدة البيانات في الخادم
@@ -107,7 +107,8 @@ const P=[
 {id:'articp',n:'رتبة Artic+',d:'أعلى رتبة بكل المزايا',c:'',p:150,i:'gift',s:99}
 ];
 const NAV=[['home','الرئيسية','home'],['shop','الرتب','store'],['cart','السلة','cart'],['orders','طلباتي','list'],['support','الدعم','help']];
-const state={v:'home',cat:'الكل',q:'',cart:{},form:{}};
+const navList=()=>[...NAV,state.user?['account','حسابي','user']:['login','تسجيل الدخول','user']];
+const state={user:null,after:'payment',v:'home',cat:'الكل',q:'',cart:{},form:{}};
 try{state.cart=JSON.parse(localStorage.getItem('amc_cart')||'{}')}catch(e){}
 const $=s=>document.querySelector(s),sar=n=>n.toFixed(2)+' ر.س',find=id=>P.find(x=>x.id===id);
 const save=()=>{try{localStorage.setItem('amc_cart',JSON.stringify(state.cart))}catch(e){}};
@@ -133,8 +134,8 @@ return `<h2>السلة</h2><div class="box">${ids.map(id=>{const p=find(id),q=st
 <div class="box"><div class="row"><span>المجموع الفرعي</span><span>${sar(t.sub)}</span></div><div class="row"><span>الخصم</span><span>−${sar(t.disc)}</span></div><div class="row tot"><span>الإجمالي</span><span>${sar(t.tot)}</span></div></div>
 <button class="btn w" onclick="go('checkout')">إتمام الطلب</button><button class="btn alt w" onclick="go('shop')">تابع التسوق</button>`},
 checkout(){if(!Object.keys(state.cart).length)return V.cart();const t=totals();
-return `<h2>إتمام الطلب</h2><div class="box"><label>اسم اللاعب في ماينكرافت</label><input class="f" id="u" value="${esc(state.form.u||'')}" maxlength="16" placeholder="Steve_123"><div class="err" id="eu"></div>
-<label>البريد الإلكتروني</label><input class="f" id="m" type="email" value="${esc(state.form.m||'')}" placeholder="name@example.com"><div class="err" id="em"></div></div>
+return `<h2>إتمام الطلب</h2><div class="box"><label>اسم اللاعب في ماينكرافت</label><input class="f" id="u" value="${esc(state.form.u||(state.user?state.user.username:''))}" maxlength="16" placeholder="Steve_123"><div class="err" id="eu"></div>
+<label>البريد الإلكتروني</label><input class="f" id="m" type="email" value="${esc(state.form.m||(state.user?state.user.email:''))}" placeholder="name@example.com"><div class="err" id="em"></div></div>
 <div class="box"><h3>ملخص الطلب</h3>${Object.keys(state.cart).map(id=>`<div class="row"><span>${find(id).n} × ${state.cart[id]}</span><span>${sar(find(id).p*state.cart[id])}</span></div>`).join('')}<div class="row tot"><span>الإجمالي</span><span>${sar(t.tot)}</span></div></div>
 <div class="err" id="vm"></div><button class="btn w" id="cb" onclick="toPay()">متابعة</button>`},
 verify(){if(!state.form.m)return V.checkout();
@@ -144,6 +145,9 @@ return `<h2>تأكيد البريد</h2><div class="box"><p style="color:var(--m
 <button class="btn w" onclick="verifyCode()">متابعة</button>
 <button class="btn alt w" id="rs" onclick="resend()" disabled>إعادة إرسال الكود</button>
 <button class="btn alt w" style="color:var(--bad);border-color:var(--bad)" onclick="cancelV()">إلغاء</button></div>`},
+login(){return `<h2>تسجيل الدخول</h2><div class="box"><label>البريد الإلكتروني</label><input class="f" id="le" type="email" autocomplete="email"><label>كلمة المرور</label><input class="f" id="lp" type="password" autocomplete="current-password"><div class="err" id="vm"></div><button class="btn w" id="lb" onclick="doLogin()">دخول</button></div><p style="text-align:center;color:var(--mu)">ما عندك حساب؟ <a style="color:var(--ice);cursor:pointer" onclick="go('register')">أنشئ حساباً</a></p>`},
+register(){return `<h2>إنشاء حساب</h2><div class="box"><label>اسم اللاعب في ماينكرافت</label><input class="f" id="ru" maxlength="16" placeholder="Steve_123"><label>البريد الإلكتروني</label><input class="f" id="re" type="email" autocomplete="email"><label>كلمة المرور (8 أحرف على الأقل)</label><input class="f" id="rp" type="password" autocomplete="new-password"><label>تأكيد كلمة المرور</label><input class="f" id="rq" type="password" autocomplete="new-password"><div class="err" id="vm"></div><button class="btn w" id="rb" onclick="doRegister()">متابعة</button></div><p style="text-align:center;color:var(--mu)">عندك حساب؟ <a style="color:var(--ice);cursor:pointer" onclick="go('login')">سجّل الدخول</a></p>`},
+account(){if(!state.user)return V.login();return `<h2>حسابي</h2><div class="box"><div class="row"><span>اسم اللاعب</span><b dir="ltr">${esc(state.user.username)}</b></div><div class="row"><span>البريد</span><b dir="ltr">${esc(state.user.email)}</b></div></div><button class="btn w" onclick="go('orders')">طلباتي</button><button class="btn alt w" style="color:var(--bad);border-color:var(--bad)" onclick="doLogout()">تسجيل الخروج</button>`},
 payment(){const t=totals();
 return `<h2>الدفع</h2><div class="box"><div class="row"><span>رقم الطلب</span><span>يُنشأ من الخادم</span></div><div class="row"><span>اللاعب</span><span dir="ltr">${state.form.u||'-'}</span></div>
 ${Object.keys(state.cart).map(id=>`<div class="row"><span>${find(id).n} × ${state.cart[id]}</span><span>${sar(find(id).p*state.cart[id])}</span></div>`).join('')}
@@ -151,7 +155,7 @@ ${Object.keys(state.cart).map(id=>`<div class="row"><span>${find(id).n} × ${sta
 <div class="box"><h3>طريقة الدفع</h3><p style="color:var(--mu);font-size:13px">مدى، فيزا، ماستركارد، Apple Pay حسب تفعيل حساب التاجر</p>
 <div class="warn">نموذج البطاقة الآمن غير مفعّل بعد. يتطلب حساب Moyasar ومفاتيح الاختبار ودوال Netlify. لن يظهر نجاح الدفع إلا بعد تأكيد المزوّد عبر الـ webhook.</div><button class="btn w" disabled>ادفع الآن</button></div>
 <button class="btn alt w" onclick="go('checkout')">رجوع</button>`},
-orders(){return `<h2>طلباتي</h2><div class="empty">${svg('list')}<p>لا توجد طلبات حالياً.<br>سيظهر سجل طلباتك هنا بعد ربط الخادم.</p></div>`},
+orders(){if(!state.user)return V.login();return `<h2>طلباتي</h2><div class="empty">${svg('list')}<p>لا توجد طلبات حالياً.<br>سيظهر سجل طلباتك هنا بعد ربط الخادم.</p></div>`},
 support(){return `<h2>الدعم</h2><div class="box"><h3>عنوان السيرفر</h3><p dir="ltr" style="text-align:right;color:var(--ice);font-weight:800;font-size:20px;margin:6px 0">ArticMc.lol</p></div>
 <div class="box"><h3>الحالات</h3><p style="color:var(--mu);font-size:13px;line-height:2">بانتظار الدفع · جاري التحقق من الدفع · تم الدفع · جاري تسليم الطلب · تم التسليم · فشل الدفع · تم إلغاء الطلب</p></div>`}
 };
@@ -159,7 +163,7 @@ function sg(){const l=P.filter(p=>(state.cat==='الكل'||p.c===state.cat)&&(p.
 let tm;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const vm=(s,ok)=>{const e=$('#vm');if(e){e.textContent=s;e.className='err'+(ok?' ok':'')}};
-async function post(u,b){try{const r=await fetch('/.netlify/functions/'+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));return{ok:r.ok,msg:j.message}}catch(e){return{ok:false,msg:'خدمة التحقق غير متصلة بالخادم بعد'}}}
+async function post(u,b){try{const r=await fetch('/.netlify/functions/'+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));return{ok:r.ok,msg:j.message,j}}catch(e){return{ok:false,msg:'خدمة التحقق غير متصلة بالخادم بعد'}}}
 async function sendCode(){const r=await post('send-code',{email:state.form.m});if(r.ok){state.cdEnd=Date.now()+60000;state.sentTo=state.form.m}return r}
 function tick(){const b=$('#rs');if(!b){clearInterval(tm);return}const s=Math.ceil(((state.cdEnd||0)-Date.now())/1000);
 if(s>0){b.disabled=true;b.textContent='إعادة الإرسال بعد '+s+' ثانية'}else{b.disabled=false;b.textContent='إعادة إرسال الكود';clearInterval(tm)}}
@@ -168,30 +172,49 @@ async function resend(){const b=$('#rs');b.disabled=true;vm('جاري إرسال
 vm(r.ok?'تم إرسال كود جديد إلى بريدك':(r.msg||'تعذر إرسال الكود'),r.ok);startTick()}
 function cin(i){const e=$('#c'+i);e.value=e.value.replace(/\D/g,'');if(e.value&&i<5)$('#c'+(i+1)).focus()}
 function ck(ev,i){if(ev.key==='Backspace'&&!$('#c'+i).value&&i>0)$('#c'+(i-1)).focus()}
-function cancelV(){clearInterval(tm);go('checkout')}
+function cancelV(){clearInterval(tm);go(state.after==='register'?'register':'checkout')}
 async function verifyCode(){const c=[0,1,2,3,4,5].map(i=>$('#c'+i).value).join('');
 if(c.length<6){vm('أدخل الكود كاملاً (6 أرقام)');return}
 const r=await post('verify-code',{email:state.form.m,code:c});
-if(r.ok){state.ver=state.form.m;vm('تم تأكيد بريدك بنجاح',true);clearInterval(tm);setTimeout(()=>go('payment'),700)}
+if(r.ok){state.ver=state.form.m;vm('تم تأكيد بريدك بنجاح',true);clearInterval(tm);setTimeout(()=>state.after==='register'?finishRegister():go('payment'),700)}
 else{vm(r.msg||'الكود غير صحيح أو منتهي');const k=document.querySelector('.codes');k.classList.remove('bad');void k.offsetWidth;k.classList.add('bad')}}
 async function toPay(){const u=$('#u').value.trim(),m=$('#m').value.trim().toLowerCase();let ok=true;$('#eu').textContent=$('#em').textContent='';vm('');
 if(!/^[A-Za-z0-9_]{3,16}$/.test(u)){$('#eu').textContent='اسم اللاعب من 3 إلى 16 حرفاً إنجليزياً أو أرقاماً أو _';ok=false}
 if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)){$('#em').textContent='أدخل بريداً إلكترونياً صحيحاً';ok=false}
-if(!ok)return;state.form={u,m};
-if(state.ver===m){go('payment');return}
+if(!ok)return;state.form={u,m};state.after='payment';
+if(state.ver===m||(state.user&&state.user.email===m)){go('payment');return}
 if(state.sentTo===m&&(state.cdEnd||0)>Date.now()){go('verify');return}
 const b=$('#cb');b.disabled=true;vm('جاري إرسال كود التأكيد…');
 const r=await sendCode();
 if(r.ok)go('verify');else{vm(r.msg||'تعذر إرسال الكود، حاول لاحقاً');b.disabled=false}}
+async function doLogin(){const e=$('#le').value.trim().toLowerCase(),p=$('#lp').value;vm('');
+if(!e||!p){vm('أدخل البريد وكلمة المرور');return}
+const b=$('#lb');b.disabled=true;const r=await post('login',{email:e,password:p});
+if(r.ok){state.user=r.j.user;go('account')}else{vm(r.msg||'تعذر تسجيل الدخول');b.disabled=false}}
+async function doRegister(){const u=$('#ru').value.trim(),e=$('#re').value.trim().toLowerCase(),p=$('#rp').value,q=$('#rq').value;vm('');
+if(!/^[A-Za-z0-9_]{3,16}$/.test(u)){vm('اسم اللاعب من 3 إلى 16 حرفاً إنجليزياً أو أرقاماً أو _');return}
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){vm('أدخل بريداً إلكترونياً صحيحاً');return}
+if(p.length<8){vm('كلمة المرور 8 أحرف على الأقل');return}
+if(p!==q){vm('كلمتا المرور غير متطابقتين');return}
+state.reg={email:e,username:u,password:p};state.form.m=e;state.after='register';
+if(state.sentTo===e&&(state.cdEnd||0)>Date.now()){go('verify');return}
+const b=$('#rb');b.disabled=true;vm('جاري إرسال كود التأكيد…');const r=await sendCode();
+if(r.ok)go('verify');else{vm(r.msg||'تعذر إرسال الكود');b.disabled=false}}
+async function finishRegister(){const r=await post('register',state.reg);
+if(r.ok){state.user=r.j.user;state.reg=null;state.after='payment';go('account')}
+else{vm(r.msg||'تعذر إنشاء الحساب');setTimeout(()=>go('register'),1800)}}
+async function doLogout(){await post('logout',{});state.user=null;go('home')}
+function loadMe(){fetch('/.netlify/functions/me').then(r=>r.ok?r.json():null).then(u=>{if(u){state.user=u;render()}}).catch(()=>{})}
 function render(bump){
 const n=Object.values(state.cart).reduce((a,b)=>a+b,0),c=$('#cc');c.textContent=n;c.style.display=n?'grid':'none';
 if(bump===true){c.classList.remove('bump');void c.offsetWidth;c.classList.add('bump')}
-$('#dr').innerHTML=`<button class="ib" onclick="tg()" aria-label="إغلاق">${svg('help').replace(/<path[^>]*>/,'<path d="M6 6l12 12M18 6L6 18"/>')}</button>`+NAV.map(([k,t,i])=>`<a class="${k===state.v?'on':''}" onclick="go('${k}')">${svg(i)} ${t}</a>`).join('');
+$('#dr').innerHTML=`<button class="ib" onclick="tg()" aria-label="إغلاق">${svg('help').replace(/<path[^>]*>/,'<path d="M6 6l12 12M18 6L6 18"/>')}</button>`+navList().map(([k,t,i])=>`<a class="${k===state.v?'on':''}" onclick="go('${k}')">${svg(i)} ${t}</a>`).join('');
 const m=$('#app');m.innerHTML=`<div class="pg">${(V[state.v]||V.home)()}</div>`;
 if(state.v==='verify'){startTick();const c0=$('#c0');if(c0)c0.focus()}
 }
 const h=(location.hash||'').slice(1);if(V[h])state.v=h;
 render();
+loadMe();
 </script>
 </body>
 </html>
