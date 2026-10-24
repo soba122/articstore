@@ -83,6 +83,8 @@ input.f:focus,.search:focus{outline:2px solid var(--ice)}
 .codes.bad{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .ok{color:var(--ok)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.av{width:96px;height:96px;border-radius:50%;margin:0 auto 10px;background:linear-gradient(160deg,#2a6fb8,#143a6b);display:grid;place-items:center;font-size:40px;font-weight:800;overflow:hidden;border:3px solid var(--ice)}
+.av img{width:100%;height:100%;object-fit:cover}
 </style>
 </head>
 <body>
@@ -147,7 +149,14 @@ return `<h2>تأكيد البريد</h2><div class="box"><p style="color:var(--m
 <button class="btn alt w" style="color:var(--bad);border-color:var(--bad)" onclick="cancelV()">إلغاء</button></div>`},
 login(){return `<h2>تسجيل الدخول</h2><div class="box"><label>البريد الإلكتروني</label><input class="f" id="le" type="email" autocomplete="email"><label>كلمة المرور</label><input class="f" id="lp" type="password" autocomplete="current-password"><div class="err" id="vm"></div><button class="btn w" id="lb" onclick="doLogin()">دخول</button></div><p style="text-align:center;color:var(--mu)">ما عندك حساب؟ <a style="color:var(--ice);cursor:pointer" onclick="go('register')">أنشئ حساباً</a></p>`},
 register(){return `<h2>إنشاء حساب</h2><div class="box"><label>اسم اللاعب في ماينكرافت</label><input class="f" id="ru" maxlength="16" placeholder="Steve_123"><label>البريد الإلكتروني</label><input class="f" id="re" type="email" autocomplete="email"><label>كلمة المرور (8 أحرف على الأقل)</label><input class="f" id="rp" type="password" autocomplete="new-password"><label>تأكيد كلمة المرور</label><input class="f" id="rq" type="password" autocomplete="new-password"><div class="err" id="vm"></div><button class="btn w" id="rb" onclick="doRegister()">متابعة</button></div><p style="text-align:center;color:var(--mu)">عندك حساب؟ <a style="color:var(--ice);cursor:pointer" onclick="go('login')">سجّل الدخول</a></p>`},
-account(){if(!state.user)return V.login();return `<h2>حسابي</h2><div class="box"><div class="row"><span>اسم اللاعب</span><b dir="ltr">${esc(state.user.username)}</b></div><div class="row"><span>البريد</span><b dir="ltr">${esc(state.user.email)}</b></div></div><button class="btn w" onclick="go('orders')">طلباتي</button><button class="btn alt w" style="color:var(--bad);border-color:var(--bad)" onclick="doLogout()">تسجيل الخروج</button>`},
+account(){if(!state.user)return V.login();const u=state.user;
+return `<h2>حسابي</h2><div class="box" style="text-align:center"><div class="av">${u.avatar?`<img src="${esc(u.avatar)}" alt="">`:esc(u.username[0].toUpperCase())}</div>
+<b dir="ltr">${esc(u.username)}</b><div style="color:var(--mu);font-size:13px;margin-bottom:8px" dir="ltr">${esc(u.email)}</div>
+<input type="file" id="af" accept="image/*" hidden onchange="pickAvatar(this)">
+<button class="btn alt w" onclick="$('#af').click()">تغيير الصورة</button>${u.avatar?'<button class="chip" style="margin-top:8px" onclick="setAvatar(null)">حذف الصورة</button>':''}<div class="err" id="am"></div></div>
+<div class="box"><h3>تغيير كلمة المرور</h3><label>كلمة المرور الحالية</label><input class="f" id="cpo" type="password" autocomplete="current-password"><label>كلمة المرور الجديدة</label><input class="f" id="cpn" type="password" autocomplete="new-password"><label>تأكيد كلمة المرور الجديدة</label><input class="f" id="cpq" type="password" autocomplete="new-password"><div class="err" id="pm"></div><button class="btn w" onclick="doChangePw()">حفظ كلمة المرور</button></div>
+<div class="box"><h3>تغيير البريد الإلكتروني</h3><label>البريد الجديد</label><input class="f" id="ne" type="email" autocomplete="off"><label>كلمة المرور الحالية</label><input class="f" id="np" type="password" autocomplete="current-password"><div class="err" id="em2"></div><button class="btn w" onclick="doChangeEmail()">إرسال كود التأكيد</button></div>
+<button class="btn w" onclick="go('orders')">طلباتي</button><button class="btn alt w" style="color:var(--bad);border-color:var(--bad)" onclick="doLogout()">تسجيل الخروج</button>`},
 payment(){const t=totals();
 return `<h2>الدفع</h2><div class="box"><div class="row"><span>رقم الطلب</span><span>يُنشأ من الخادم</span></div><div class="row"><span>اللاعب</span><span dir="ltr">${state.form.u||'-'}</span></div>
 ${Object.keys(state.cart).map(id=>`<div class="row"><span>${find(id).n} × ${state.cart[id]}</span><span>${sar(find(id).p*state.cart[id])}</span></div>`).join('')}
@@ -163,8 +172,8 @@ function sg(){const l=P.filter(p=>(state.cat==='الكل'||p.c===state.cat)&&(p.
 let tm;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const vm=(s,ok)=>{const e=$('#vm');if(e){e.textContent=s;e.className='err'+(ok?' ok':'')}};
-async function post(u,b){try{const r=await fetch('/.netlify/functions/'+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));return{ok:r.ok,msg:j.message,j}}catch(e){return{ok:false,msg:'خدمة التحقق غير متصلة بالخادم بعد'}}}
-async function sendCode(){const r=await post('send-code',{email:state.form.m});if(r.ok){state.cdEnd=Date.now()+60000;state.sentTo=state.form.m}return r}
+async function post(u,b){try{const r=await fetch('/.netlify/functions/'+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));return{ok:r.ok,msg:j.message,j,s:r.status}}catch(e){return{ok:false,msg:'خدمة التحقق غير متصلة بالخادم بعد'}}}
+async function sendCode(p){const r=await post('send-code',{email:state.form.m,purpose:p});if(r.ok){state.cdEnd=Date.now()+60000;state.sentTo=state.form.m}return r}
 function tick(){const b=$('#rs');if(!b){clearInterval(tm);return}const s=Math.ceil(((state.cdEnd||0)-Date.now())/1000);
 if(s>0){b.disabled=true;b.textContent='إعادة الإرسال بعد '+s+' ثانية'}else{b.disabled=false;b.textContent='إعادة إرسال الكود';clearInterval(tm)}}
 function startTick(){clearInterval(tm);tick();tm=setInterval(tick,1000)}
@@ -172,11 +181,11 @@ async function resend(){const b=$('#rs');b.disabled=true;vm('جاري إرسال
 vm(r.ok?'تم إرسال كود جديد إلى بريدك':(r.msg||'تعذر إرسال الكود'),r.ok);startTick()}
 function cin(i){const e=$('#c'+i);e.value=e.value.replace(/\D/g,'');if(e.value&&i<5)$('#c'+(i+1)).focus()}
 function ck(ev,i){if(ev.key==='Backspace'&&!$('#c'+i).value&&i>0)$('#c'+(i-1)).focus()}
-function cancelV(){clearInterval(tm);go(state.after==='register'?'register':'checkout')}
+function cancelV(){clearInterval(tm);go(state.after==='register'?'register':state.after==='email'?'account':'checkout')}
 async function verifyCode(){const c=[0,1,2,3,4,5].map(i=>$('#c'+i).value).join('');
 if(c.length<6){vm('أدخل الكود كاملاً (6 أرقام)');return}
 const r=await post('verify-code',{email:state.form.m,code:c});
-if(r.ok){state.ver=state.form.m;vm('تم تأكيد بريدك بنجاح',true);clearInterval(tm);setTimeout(()=>state.after==='register'?finishRegister():go('payment'),700)}
+if(r.ok){state.ver=state.form.m;vm('تم تأكيد بريدك بنجاح',true);clearInterval(tm);setTimeout(afterVerify,700)}
 else{vm(r.msg||'الكود غير صحيح أو منتهي');const k=document.querySelector('.codes');k.classList.remove('bad');void k.offsetWidth;k.classList.add('bad')}}
 async function toPay(){const u=$('#u').value.trim(),m=$('#m').value.trim().toLowerCase();let ok=true;$('#eu').textContent=$('#em').textContent='';vm('');
 if(!/^[A-Za-z0-9_]{3,16}$/.test(u)){$('#eu').textContent='اسم اللاعب من 3 إلى 16 حرفاً إنجليزياً أو أرقاماً أو _';ok=false}
@@ -190,21 +199,37 @@ if(r.ok)go('verify');else{vm(r.msg||'تعذر إرسال الكود، حاول �
 async function doLogin(){const e=$('#le').value.trim().toLowerCase(),p=$('#lp').value;vm('');
 if(!e||!p){vm('أدخل البريد وكلمة المرور');return}
 const b=$('#lb');b.disabled=true;const r=await post('login',{email:e,password:p});
-if(r.ok){state.user=r.j.user;go('account')}else{vm(r.msg||'تعذر تسجيل الدخول');b.disabled=false}}
+if(r.ok){state.user=r.j.user;loadMe();go('account')}else{vm(r.msg||'تعذر تسجيل الدخول');b.disabled=false}}
 async function doRegister(){const u=$('#ru').value.trim(),e=$('#re').value.trim().toLowerCase(),p=$('#rp').value,q=$('#rq').value;vm('');
 if(!/^[A-Za-z0-9_]{3,16}$/.test(u)){vm('اسم اللاعب من 3 إلى 16 حرفاً إنجليزياً أو أرقاماً أو _');return}
 if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){vm('أدخل بريداً إلكترونياً صحيحاً');return}
 if(p.length<8){vm('كلمة المرور 8 أحرف على الأقل');return}
 if(p!==q){vm('كلمتا المرور غير متطابقتين');return}
 state.reg={email:e,username:u,password:p};state.form.m=e;state.after='register';
-if(state.sentTo===e&&(state.cdEnd||0)>Date.now()){go('verify');return}
-const b=$('#rb');b.disabled=true;vm('جاري إرسال كود التأكيد…');const r=await sendCode();
-if(r.ok)go('verify');else{vm(r.msg||'تعذر إرسال الكود');b.disabled=false}}
+const b=$('#rb');b.disabled=true;vm('جاري إرسال كود التأكيد…');const r=await sendCode('register');
+if(r.ok||(r.s===429&&state.sentTo===e&&(state.cdEnd||0)>Date.now()))go('verify');else{vm(r.msg||'تعذر إرسال الكود');b.disabled=false}}
 async function finishRegister(){const r=await post('register',state.reg);
 if(r.ok){state.user=r.j.user;state.reg=null;state.after='payment';go('account')}
 else{vm(r.msg||'تعذر إنشاء الحساب');setTimeout(()=>go('register'),1800)}}
 async function doLogout(){await post('logout',{});state.user=null;go('home')}
 function loadMe(){fetch('/.netlify/functions/me').then(r=>r.ok?r.json():null).then(u=>{if(u){state.user=u;render()}}).catch(()=>{})}
+const pm=(id,s,ok)=>{const e=$('#'+id);if(e){e.textContent=s;e.className='err'+(ok?' ok':'')}};
+function afterVerify(){const a=state.after;if(a==='register')finishRegister();else if(a==='email')finishEmail();else go('payment')}
+async function setAvatar(img){const r=await post('avatar',{image:img});if(r.ok){state.user.avatar=img;render()}else pm('am',r.msg||'تعذر حفظ الصورة')}
+function pickAvatar(inp){const f=inp.files[0];if(!f)return;if(!f.type.startsWith('image/')){pm('am','اختر ملف صورة');return}
+const im=new Image(),url=URL.createObjectURL(f);im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=128;const s=Math.min(im.width,im.height);c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,128,128);URL.revokeObjectURL(url);setAvatar(c.toDataURL('image/jpeg',0.8))};im.onerror=()=>pm('am','تعذر قراءة الصورة');im.src=url}
+async function doChangePw(){const a=$('#cpo').value,b=$('#cpn').value,c=$('#cpq').value;
+if(!a){pm('pm','أدخل كلمة المرور الحالية');return}if(b.length<8){pm('pm','كلمة المرور الجديدة 8 أحرف على الأقل');return}if(b!==c){pm('pm','كلمتا المرور غير متطابقتين');return}
+const r=await post('change-password',{current:a,next:b});pm('pm',r.ok?'تم تغيير كلمة المرور':(r.msg||'تعذر التغيير'),r.ok);if(r.ok)['cpo','cpn','cpq'].forEach(i=>$('#'+i).value='')}
+async function doChangeEmail(){const e=$('#ne').value.trim().toLowerCase(),p=$('#np').value;
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){pm('em2','أدخل بريداً إلكترونياً صحيحاً');return}
+if(e===state.user.email){pm('em2','هذا بريدك الحالي');return}
+if(!p){pm('em2','أدخل كلمة المرور الحالية');return}
+state.chg={email:e,password:p};state.form.m=e;state.after='email';pm('em2','جاري إرسال الكود…');
+const r=await sendCode('register');
+if(r.ok||(r.s===429&&state.sentTo===e&&(state.cdEnd||0)>Date.now()))go('verify');else pm('em2',r.msg||'تعذر إرسال الكود')}
+async function finishEmail(){const r=await post('change-email',state.chg);
+if(r.ok){state.user=r.j.user;state.chg=null;state.after='payment';go('account')}else{vm(r.msg||'تعذر تغيير البريد');setTimeout(()=>go('account'),1800)}}
 function render(bump){
 const n=Object.values(state.cart).reduce((a,b)=>a+b,0),c=$('#cc');c.textContent=n;c.style.display=n?'grid':'none';
 if(bump===true){c.classList.remove('bump');void c.offsetWidth;c.classList.add('bump')}
