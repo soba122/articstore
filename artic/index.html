@@ -133,13 +133,17 @@ return `<h2>السلة</h2><div class="box">${ids.map(id=>{const p=find(id),q=st
 <div class="box"><div class="row"><span>المجموع الفرعي</span><span>${sar(t.sub)}</span></div><div class="row"><span>الخصم</span><span>−${sar(t.disc)}</span></div><div class="row tot"><span>الإجمالي</span><span>${sar(t.tot)}</span></div></div>
 <button class="btn w" onclick="go('checkout')">إتمام الطلب</button><button class="btn alt w" onclick="go('shop')">تابع التسوق</button>`},
 checkout(){if(!Object.keys(state.cart).length)return V.cart();const t=totals();
-return `<h2>إتمام الطلب</h2><div class="box"><label>اسم اللاعب في ماينكرافت</label><input class="f" id="u" value="${state.form.u||''}" maxlength="16" placeholder="Steve_123"><div class="err" id="eu"></div>
-<label>البريد الإلكتروني</label><input class="f" id="m" type="email" value="${state.form.m||''}" placeholder="name@example.com" oninput="state.ver=''; $('#vb').hidden=true"><div class="err" id="em"></div>
-<button class="btn alt w" id="sb" onclick="sendCode()">إرسال كود التأكيد</button>
-<div id="vb" ${state.sent?'':'hidden'} class="pg"><label>أدخل الكود المرسل لبريدك</label><div class="codes">${[0,1,2,3,4,5].map(i=>`<input id="c${i}" inputmode="numeric" maxlength="1" oninput="cin(${i})" onkeydown="ck(event,${i})">`).join('')}</div>
-<button class="btn w" onclick="verifyCode()">تأكيد الكود</button></div><div class="err" id="vm"></div></div>
+return `<h2>إتمام الطلب</h2><div class="box"><label>اسم اللاعب في ماينكرافت</label><input class="f" id="u" value="${esc(state.form.u||'')}" maxlength="16" placeholder="Steve_123"><div class="err" id="eu"></div>
+<label>البريد الإلكتروني</label><input class="f" id="m" type="email" value="${esc(state.form.m||'')}" placeholder="name@example.com"><div class="err" id="em"></div></div>
 <div class="box"><h3>ملخص الطلب</h3>${Object.keys(state.cart).map(id=>`<div class="row"><span>${find(id).n} × ${state.cart[id]}</span><span>${sar(find(id).p*state.cart[id])}</span></div>`).join('')}<div class="row tot"><span>الإجمالي</span><span>${sar(t.tot)}</span></div></div>
-<button class="btn w" onclick="toPay()">المتابعة للدفع</button>`},
+<div class="err" id="vm"></div><button class="btn w" id="cb" onclick="toPay()">متابعة</button>`},
+verify(){if(!state.form.m)return V.checkout();
+return `<h2>تأكيد البريد</h2><div class="box"><p style="color:var(--mu);font-size:14px;line-height:1.9;margin-top:0">أرسلنا كود من 6 أرقام إلى<br><b dir="ltr" style="color:var(--ice)">${esc(state.form.m)}</b></p>
+<div class="codes">${[0,1,2,3,4,5].map(i=>`<input id="c${i}" inputmode="numeric" maxlength="1" oninput="cin(${i})" onkeydown="ck(event,${i})">`).join('')}</div>
+<div class="err" id="vm"></div>
+<button class="btn w" onclick="verifyCode()">متابعة</button>
+<button class="btn alt w" id="rs" onclick="resend()" disabled>إعادة إرسال الكود</button>
+<button class="btn alt w" style="color:var(--bad);border-color:var(--bad)" onclick="cancelV()">إلغاء</button></div>`},
 payment(){const t=totals();
 return `<h2>الدفع</h2><div class="box"><div class="row"><span>رقم الطلب</span><span>يُنشأ من الخادم</span></div><div class="row"><span>اللاعب</span><span dir="ltr">${state.form.u||'-'}</span></div>
 ${Object.keys(state.cart).map(id=>`<div class="row"><span>${find(id).n} × ${state.cart[id]}</span><span>${sar(find(id).p*state.cart[id])}</span></div>`).join('')}
@@ -152,32 +156,39 @@ support(){return `<h2>الدعم</h2><div class="box"><h3>عنوان السير�
 <div class="box"><h3>الحالات</h3><p style="color:var(--mu);font-size:13px;line-height:2">بانتظار الدفع · جاري التحقق من الدفع · تم الدفع · جاري تسليم الطلب · تم التسليم · فشل الدفع · تم إلغاء الطلب</p></div>`}
 };
 function sg(){const l=P.filter(p=>(state.cat==='الكل'||p.c===state.cat)&&(p.n+p.d).includes(state.q.trim()));$('#g').innerHTML=l.map(card).join('')||'<p class="empty">لا توجد منتجات مطابقة</p>'}
-let cd=0,tm;
-const vm=(s,ok)=>{const e=$('#vm');e.textContent=s;e.className='err'+(ok?' ok':'')};
+let tm;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const vm=(s,ok)=>{const e=$('#vm');if(e){e.textContent=s;e.className='err'+(ok?' ok':'')}};
 async function post(u,b){try{const r=await fetch('/.netlify/functions/'+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));return{ok:r.ok,msg:j.message}}catch(e){return{ok:false,msg:'خدمة التحقق غير متصلة بالخادم بعد'}}}
-async function sendCode(){const m=$('#m').value.trim();$('#em').textContent='';
-if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)){$('#em').textContent='أدخل بريداً إلكترونياً صحيحاً';return}
-state.form.m=m;state.form.u=$('#u').value.trim();const b=$('#sb');b.disabled=true;vm('جاري إرسال الكود…');
-const r=await post('send-code',{email:m});
-if(r.ok){state.sent=true;$('#vb').hidden=false;vm('تم إرسال الكود إلى بريدك',true);$('#c0').focus();cd=60;clearInterval(tm);tm=setInterval(()=>{cd--;b.textContent=cd>0?'إعادة الإرسال بعد '+cd+' ثانية':'إعادة إرسال الكود';if(cd<=0){clearInterval(tm);b.disabled=false}},1000)}
-else{vm(r.msg||'تعذر إرسال الكود، حاول لاحقاً');b.disabled=false}}
+async function sendCode(){const r=await post('send-code',{email:state.form.m});if(r.ok){state.cdEnd=Date.now()+60000;state.sentTo=state.form.m}return r}
+function tick(){const b=$('#rs');if(!b){clearInterval(tm);return}const s=Math.ceil(((state.cdEnd||0)-Date.now())/1000);
+if(s>0){b.disabled=true;b.textContent='إعادة الإرسال بعد '+s+' ثانية'}else{b.disabled=false;b.textContent='إعادة إرسال الكود';clearInterval(tm)}}
+function startTick(){clearInterval(tm);tick();tm=setInterval(tick,1000)}
+async function resend(){const b=$('#rs');b.disabled=true;vm('جاري إرسال الكود…');const r=await sendCode();
+vm(r.ok?'تم إرسال كود جديد إلى بريدك':(r.msg||'تعذر إرسال الكود'),r.ok);startTick()}
 function cin(i){const e=$('#c'+i);e.value=e.value.replace(/\D/g,'');if(e.value&&i<5)$('#c'+(i+1)).focus()}
 function ck(ev,i){if(ev.key==='Backspace'&&!$('#c'+i).value&&i>0)$('#c'+(i-1)).focus()}
+function cancelV(){clearInterval(tm);go('checkout')}
 async function verifyCode(){const c=[0,1,2,3,4,5].map(i=>$('#c'+i).value).join('');
 if(c.length<6){vm('أدخل الكود كاملاً (6 أرقام)');return}
-const r=await post('verify-code',{email:$('#m').value.trim(),code:c});
-if(r.ok){state.ver=$('#m').value.trim();vm('تم تأكيد بريدك بنجاح',true)}
+const r=await post('verify-code',{email:state.form.m,code:c});
+if(r.ok){state.ver=state.form.m;vm('تم تأكيد بريدك بنجاح',true);clearInterval(tm);setTimeout(()=>go('payment'),700)}
 else{vm(r.msg||'الكود غير صحيح أو منتهي');const k=document.querySelector('.codes');k.classList.remove('bad');void k.offsetWidth;k.classList.add('bad')}}
-function toPay(){const u=$('#u').value.trim(),m=$('#m').value.trim();let ok=true;$('#eu').textContent=$('#em').textContent='';
+async function toPay(){const u=$('#u').value.trim(),m=$('#m').value.trim().toLowerCase();let ok=true;$('#eu').textContent=$('#em').textContent='';vm('');
 if(!/^[A-Za-z0-9_]{3,16}$/.test(u)){$('#eu').textContent='اسم اللاعب من 3 إلى 16 حرفاً إنجليزياً أو أرقاماً أو _';ok=false}
 if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)){$('#em').textContent='أدخل بريداً إلكترونياً صحيحاً';ok=false}
-if(ok&&state.ver!==m){$('#em').textContent='أكّد بريدك بالكود أولاً';ok=false}
-if(ok){state.form={u,m};go('payment')}}
+if(!ok)return;state.form={u,m};
+if(state.ver===m){go('payment');return}
+if(state.sentTo===m&&(state.cdEnd||0)>Date.now()){go('verify');return}
+const b=$('#cb');b.disabled=true;vm('جاري إرسال كود التأكيد…');
+const r=await sendCode();
+if(r.ok)go('verify');else{vm(r.msg||'تعذر إرسال الكود، حاول لاحقاً');b.disabled=false}}
 function render(bump){
 const n=Object.values(state.cart).reduce((a,b)=>a+b,0),c=$('#cc');c.textContent=n;c.style.display=n?'grid':'none';
 if(bump===true){c.classList.remove('bump');void c.offsetWidth;c.classList.add('bump')}
 $('#dr').innerHTML=`<button class="ib" onclick="tg()" aria-label="إغلاق">${svg('help').replace(/<path[^>]*>/,'<path d="M6 6l12 12M18 6L6 18"/>')}</button>`+NAV.map(([k,t,i])=>`<a class="${k===state.v?'on':''}" onclick="go('${k}')">${svg(i)} ${t}</a>`).join('');
 const m=$('#app');m.innerHTML=`<div class="pg">${(V[state.v]||V.home)()}</div>`;
+if(state.v==='verify'){startTick();const c0=$('#c0');if(c0)c0.focus()}
 }
 const h=(location.hash||'').slice(1);if(V[h])state.v=h;
 render();
